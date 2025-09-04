@@ -603,7 +603,7 @@ void SaveKey(const std::string& filename, const CryptoPP::DSA::PrivateKey& key) 
     file.MessageEnd();
 }
 
-void LoadKey(const std::string& filename, CryptoPP::DSA::PublicKey& key) {
+void LoadKey(const std::string& filename,CryptoPP::DSA::PublicKey& key) {
     CryptoPP::ByteQueue queue;
     CryptoPP::FileSource file(filename.c_str(), true);
     file.TransferTo(queue);
