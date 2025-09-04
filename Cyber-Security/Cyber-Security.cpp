@@ -9,9 +9,9 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <thread>
 
-
-// Crypto++ headers (Corrected Paths)
+// Crypto++ headers
 #include "rsa.h"
 #include "osrng.h"
 #include "base64.h"
@@ -21,19 +21,21 @@
 #include "pssr.h"
 #include "whrlpool.h"
 
-// --- START OF FINAL FIX ---
-// Manually define the missing identifier to force the compiler to recognize it.
+// Headers and libraries for UI enhancements
+#include <commctrl.h>
+#pragma comment(lib, "comctl32.lib")
+
+// Manually define the missing identifier if not found
 #ifndef OFN_OVERWRITEREPROMPT
 #define OFN_OVERWRITEREPROMPT 0x00000002
 #endif
-// --- END OF FINAL FIX ---
 
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+HINSTANCE hInst;
+WCHAR szTitle[MAX_LOADSTRING];
+WCHAR szWindowClass[MAX_LOADSTRING];
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -50,12 +52,12 @@ HWND hInputFileText;
 HWND hOutputFileText;
 HWND hOperationComboBox;
 
-// --- Crypto++ Functions ---
-void GenerateRSAKeys();
-void EncryptRSA(const wchar_t* inputFile);
-void DecryptRSA(const wchar_t* inputFile);
-void GenerateDSASignature(const wchar_t* inputFile);
-void VerifyDSASignature(const wchar_t* inputFile);
+// --- Crypto++ Functions (Updated Declarations) ---
+void GenerateRSAKeys(HWND hWnd);
+void EncryptRSA(const wchar_t* inputFile, HWND hWnd);
+void DecryptRSA(const wchar_t* inputFile, HWND hWnd);
+void GenerateDSASignature(const wchar_t* inputFile, HWND hWnd);
+void VerifyDSASignature(const wchar_t* inputFile, HWND hWnd);
 
 // --- Helper Functions ---
 void SaveKey(const std::string& filename, const CryptoPP::RSA::PublicKey& key);
@@ -102,16 +104,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
-    return static_cast<int>(msg.wParam); (int)msg.wParam;
+    return (int)msg.wParam;
 }
 
-
-
-//
-//  FUNCTION: MyRegisterClass()
-//
-//  PURPOSE: Registers the window class.
-//
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
@@ -133,16 +128,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     return RegisterClassExW(&wcex);
 }
 
-//
-//   FUNCTION: InitInstance(HINSTANCE, int)
-//
-//   PURPOSE: Saves instance handle and creates main window
-//
-//   COMMENTS:
-//
-//        In this function, we save the instance handle in a global variable and
-//        create and display the main program window.
-//
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
     hInst = hInstance; // Store instance handle in our global variable
@@ -161,18 +146,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     return TRUE;
 }
 
-//
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  PURPOSE: Processes messages for the main window.
-//
-//  WM_COMMAND  - process the application menu
-//  WM_PAINT    - Paint the main window
-//  WM_DESTROY  - post a quit message and return
-//
-//
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    static HWND hProgressBar; // Make progress bar handle accessible
+
     switch (message)
     {
     case WM_CREATE:
@@ -198,7 +175,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER,
             120, 90, 250, 30, hWnd, (HMENU)5, hInst, NULL);
 
-
         hStatusLabel = CreateWindow(
             L"STATIC", L"Status: Ready", WS_CHILD | WS_VISIBLE | SS_LEFT,
             10, 130, 360, 20, hWnd, (HMENU)6, hInst, NULL);
@@ -206,12 +182,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hOperationComboBox = CreateWindow(
             L"COMBOBOX", L"", CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
             120, 50, 250, 100, hWnd, (HMENU)7, hInst, NULL);
+
+        hProgressBar = CreateWindowEx(
+            0, PROGRESS_CLASS, NULL,
+            WS_CHILD | WS_VISIBLE,
+            10, 160, 360, 20, // Position it below the status label
+            hWnd, (HMENU)8, hInst, NULL);
+
         // Add items to the combo box
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"RSA Key Generation");
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"RSA Encryption");
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"RSA Decryption");
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"DSA Signature Generation");
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"DSA Signature Verification");
+        SendMessage(hProgressBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
         // Set the default selection
         SendMessage(hOperationComboBox, CB_SETCURSEL, 0, 0);
     }
@@ -246,33 +230,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
         case 3: // Process Button
         {
-            // Get selected operation
             int selectedIndex = SendMessage(hOperationComboBox, CB_GETCURSEL, 0, 0);
-            // Get input file path
-            wchar_t inputFile[260];
+            static wchar_t inputFile[260]; // Make static so it persists for the thread
             GetWindowText(hInputFileText, inputFile, 260);
 
-            SetWindowText(hStatusLabel, L"Status: Processing...");
-
-            // Call the appropriate crypto function based on the selected operation
-            switch (selectedIndex)
-            {
-            case 0: // RSA Key Generation
-                GenerateRSAKeys();
-                break;
-            case 1: // RSA Encryption
-                EncryptRSA(inputFile);
-                break;
-            case 2: // RSA Decryption
-                DecryptRSA(inputFile);
-                break;
-            case 3: // DSA Signature Generation
-                GenerateDSASignature(inputFile);
-                break;
-            case 4: // DSA Signature Verification
-                VerifyDSASignature(inputFile);
-                break;
+            // Basic input validation
+            if (selectedIndex > 0 && wcslen(inputFile) == 0) {
+                MessageBox(hWnd, L"Please select an input file first.", L"Input Required", MB_OK | MB_ICONWARNING);
+                return 0;
             }
+
+            SetWindowText(hStatusLabel, L"Status: Processing...");
+            SendMessage(hProgressBar, PBM_SETPOS, 0, 0); // Reset progress bar
+            EnableWindow(hProcessButton, FALSE); // Disable the button
+
+            // Run the crypto operation in a separate thread to keep the UI responsive
+            std::thread([=]() {
+                switch (selectedIndex)
+                {
+                case 0: GenerateRSAKeys(hWnd); break;
+                case 1: EncryptRSA(inputFile, hWnd); break;
+                case 2: DecryptRSA(inputFile, hWnd); break;
+                case 3: GenerateDSASignature(inputFile, hWnd); break;
+                case 4: VerifyDSASignature(inputFile, hWnd); break;
+                }
+                // When the thread is finished, send a message back to the UI thread
+                PostMessage(hWnd, WM_APP + 1, 0, 0);
+                }).detach();
         }
         break;
         case 4: // Download Button
@@ -294,7 +278,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (GetSaveFileName(&ofn) == TRUE)
             {
                 SetWindowText(hOutputFileText, ofn.lpstrFile);
-                // The saving of the processed data happens within each crypto function
             }
         }
         break;
@@ -309,11 +292,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
     }
     break;
+    // This message is sent from the worker thread to update the progress bar
+    case PBM_SETPOS:
+    {
+        SendMessage(hProgressBar, PBM_SETPOS, wParam, lParam);
+    }
+    break;
+    // This custom message is sent from the worker thread when it's finished
+    case WM_APP + 1:
+    {
+        EnableWindow(hProcessButton, TRUE); // Re-enable the process button
+        SetWindowText(hStatusLabel, L"Status: Operation complete. Ready.");
+    }
+    break;
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-        // TODO: Add any drawing code that uses hdc here...
         EndPaint(hWnd, &ps);
     }
     break;
@@ -346,36 +341,53 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-
-// --- Crypto++ Implementations ---
-
-void GenerateRSAKeys() {
-    CryptoPP::AutoSeededRandomPool rng;
-
-    CryptoPP::RSA::PrivateKey privateKey;
-    privateKey.GenerateRandomWithKeySize(rng, 2048);
-    CryptoPP::RSA::PublicKey publicKey(privateKey);
-
-    SaveKey("rsa-private.key", privateKey);
-    SaveKey("rsa-public.key", publicKey);
-
-    SetWindowText(hStatusLabel, L"Status: RSA key pair generated.");
+// --- Helper function to display errors ---
+void ShowError(HWND hWnd, const std::wstring& errorMessage)
+{
+    MessageBox(hWnd, errorMessage.c_str(), L"Error", MB_OK | MB_ICONERROR);
 }
 
-void EncryptRSA(const wchar_t* inputFile) {
+
+// --- Modified Crypto++ Implementations ---
+
+void GenerateRSAKeys(HWND hWnd) {
+    try {
+        CryptoPP::AutoSeededRandomPool rng;
+        PostMessage(hWnd, PBM_SETPOS, 25, 0);
+
+        CryptoPP::RSA::PrivateKey privateKey;
+        privateKey.GenerateRandomWithKeySize(rng, 2048);
+        CryptoPP::RSA::PublicKey publicKey(privateKey);
+        PostMessage(hWnd, PBM_SETPOS, 75, 0);
+
+        SaveKey("rsa-private.key", privateKey);
+        SaveKey("rsa-public.key", publicKey);
+
+        PostMessage(hWnd, PBM_SETPOS, 100, 0);
+    }
+    catch (const CryptoPP::Exception& e) {
+        std::wstringstream ws;
+        ws << L"A cryptographic error occurred during key generation:\n\n" << e.what();
+        ShowError(hWnd, ws.str());
+    }
+}
+
+void EncryptRSA(const wchar_t* inputFile, HWND hWnd) {
     try {
         CryptoPP::RSA::PublicKey publicKey;
         LoadKey("rsa-public.key", publicKey);
+        PostMessage(hWnd, PBM_SETPOS, 25, 0);
 
         std::ifstream file(inputFile, std::ios::binary);
         if (!file.is_open()) {
-            SetWindowText(hStatusLabel, L"Status: Error opening input file.");
+            ShowError(hWnd, L"Could not open the selected input file for encryption.");
             return;
         }
 
         std::ostringstream ss;
         ss << file.rdbuf();
         std::string plaintext = ss.str();
+        PostMessage(hWnd, PBM_SETPOS, 50, 0);
 
         std::string ciphertext;
         CryptoPP::RSAES_OAEP_SHA_Encryptor e(publicKey);
@@ -386,35 +398,36 @@ void EncryptRSA(const wchar_t* inputFile) {
                 new CryptoPP::StringSink(ciphertext)
             )
         );
+        PostMessage(hWnd, PBM_SETPOS, 75, 0);
 
         std::ofstream out("encrypted.dat", std::ios::binary);
         out.write(ciphertext.c_str(), ciphertext.length());
         out.close();
 
-        SetWindowText(hStatusLabel, L"Status: File encrypted successfully.");
-
+        PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
     catch (const CryptoPP::Exception& e) {
         std::wstringstream ws;
-        ws << L"Status: Crypto++ Exception: " << e.what();
-        SetWindowText(hStatusLabel, ws.str().c_str());
+        ws << L"A cryptographic error occurred during encryption:\n\n" << e.what();
+        ShowError(hWnd, ws.str());
     }
 }
 
-
-void DecryptRSA(const wchar_t* inputFile) {
+void DecryptRSA(const wchar_t* inputFile, HWND hWnd) {
     try {
         CryptoPP::RSA::PrivateKey privateKey;
         LoadKey("rsa-private.key", privateKey);
+        PostMessage(hWnd, PBM_SETPOS, 25, 0);
 
         std::ifstream file(inputFile, std::ios::binary);
         if (!file.is_open()) {
-            SetWindowText(hStatusLabel, L"Status: Error opening input file.");
+            ShowError(hWnd, L"Could not open the selected input file for decryption.");
             return;
         }
         std::ostringstream ss;
         ss << file.rdbuf();
         std::string ciphertext = ss.str();
+        PostMessage(hWnd, PBM_SETPOS, 50, 0);
 
         std::string plaintext;
         CryptoPP::RSAES_OAEP_SHA_Decryptor d(privateKey);
@@ -425,76 +438,78 @@ void DecryptRSA(const wchar_t* inputFile) {
                 new CryptoPP::StringSink(plaintext)
             )
         );
+        PostMessage(hWnd, PBM_SETPOS, 75, 0);
+
         wchar_t outputFile[260];
         GetWindowText(hOutputFileText, outputFile, 260);
 
+        if (wcslen(outputFile) == 0) {
+            ShowError(hWnd, L"Please select an output location using the 'Download' button before decrypting.");
+            return;
+        }
 
         std::ofstream out(outputFile, std::ios::binary);
         out.write(plaintext.c_str(), plaintext.length());
         out.close();
 
-        SetWindowText(hStatusLabel, L"Status: File decrypted successfully.");
+        PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
     catch (const CryptoPP::Exception& e) {
         std::wstringstream ws;
-        ws << L"Status: Crypto++ Exception: " << e.what();
-        SetWindowText(hStatusLabel, ws.str().c_str());
+        ws << L"A cryptographic error occurred during decryption:\n\n" << e.what();
+        ShowError(hWnd, ws.str());
     }
 }
 
-
-void GenerateDSASignature(const wchar_t* inputFile)
+void GenerateDSASignature(const wchar_t* inputFile, HWND hWnd)
 {
     try
     {
         CryptoPP::AutoSeededRandomPool rng;
+        PostMessage(hWnd, PBM_SETPOS, 10, 0);
 
-        // Generate keys
         CryptoPP::DSA::PrivateKey privateKey;
         privateKey.GenerateRandomWithKeySize(rng, 1024);
-
         CryptoPP::DSA::PublicKey publicKey;
         publicKey.AssignFrom(privateKey);
+        PostMessage(hWnd, PBM_SETPOS, 30, 0);
 
         SaveKey("dsa-private.key", privateKey);
         SaveKey("dsa-public.key", publicKey);
+        PostMessage(hWnd, PBM_SETPOS, 40, 0);
 
-
-        // Sign message
-        CryptoPP::DSA::Signer signer(privateKey);
-
-        std::ifstream file(inputFile);
+        std::ifstream file(inputFile, std::ios::binary);
         if (!file.is_open()) {
-            SetWindowText(hStatusLabel, L"Status: Error opening input file.");
+            ShowError(hWnd, L"Could not open the selected input file for signing.");
             return;
         }
-
-        std::string message((std::istreambuf_iterator<char>(file)),
-            std::istreambuf_iterator<char>());
+        std::string message((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        PostMessage(hWnd, PBM_SETPOS, 60, 0);
 
         std::string signature;
+        CryptoPP::DSA::Signer signer(privateKey);
         CryptoPP::StringSource(message, true,
             new CryptoPP::SignerFilter(rng, signer,
                 new CryptoPP::StringSink(signature)
             )
         );
+        PostMessage(hWnd, PBM_SETPOS, 80, 0);
 
-        // Save signature
         std::ofstream sigFile("signature.dat", std::ios::binary);
         sigFile.write(signature.c_str(), signature.size());
         sigFile.close();
 
-        SetWindowText(hStatusLabel, L"Status: DSA signature generated.");
+        PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
     catch (const CryptoPP::Exception& e)
     {
         std::wstringstream ws;
-        ws << L"Status: Crypto++ Exception: " << e.what();
-        SetWindowText(hStatusLabel, ws.str().c_str());
+        ws << L"A cryptographic error occurred during signature generation:\n\n" << e.what();
+        ShowError(hWnd, ws.str());
     }
 }
 
-void VerifyDSASignature(const wchar_t* inputFile)
+void VerifyDSASignature(const wchar_t* inputFile, HWND hWnd)
 {
     try
     {
@@ -503,42 +518,37 @@ void VerifyDSASignature(const wchar_t* inputFile)
 
         std::ifstream sigFile("signature.dat", std::ios::binary);
         if (!sigFile.is_open()) {
-            SetWindowText(hStatusLabel, L"Status: Error opening signature file.");
+            ShowError(hWnd, L"Could not open signature file 'signature.dat'.");
             return;
         }
-        std::string signature((std::istreambuf_iterator<char>(sigFile)),
-            std::istreambuf_iterator<char>());
+        std::string signature((std::istreambuf_iterator<char>(sigFile)), std::istreambuf_iterator<char>());
+        PostMessage(hWnd, PBM_SETPOS, 33, 0);
 
-
-        std::ifstream file(inputFile);
+        std::ifstream file(inputFile, std::ios::binary);
         if (!file.is_open()) {
-            SetWindowText(hStatusLabel, L"Status: Error opening input file.");
+            ShowError(hWnd, L"Could not open the selected input file for verification.");
             return;
         }
-        std::string message((std::istreambuf_iterator<char>(file)),
-            std::istreambuf_iterator<char>());
-
+        std::string message((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        PostMessage(hWnd, PBM_SETPOS, 66, 0);
 
         CryptoPP::DSA::Verifier verifier(publicKey);
-        bool result = false;
-        CryptoPP::StringSource(message + signature, true,
-            new CryptoPP::SignatureVerificationFilter(
-                verifier,
-                new CryptoPP::ArraySink((CryptoPP::byte*)&result, sizeof(result))
-            )
+        bool result = verifier.VerifyMessage(
+            (const CryptoPP::byte*)message.c_str(), message.length(),
+            (const CryptoPP::byte*)signature.c_str(), signature.length()
         );
-
+        PostMessage(hWnd, PBM_SETPOS, 100, 0);
 
         if (result)
-            SetWindowText(hStatusLabel, L"Status: Signature is valid.");
+            MessageBox(hWnd, L"The signature is valid.", L"Verification Success", MB_OK | MB_ICONINFORMATION);
         else
-            SetWindowText(hStatusLabel, L"Status: Signature is not valid.");
+            MessageBox(hWnd, L"The signature is NOT valid.", L"Verification Failed", MB_OK | MB_ICONWARNING);
     }
     catch (const CryptoPP::Exception& e)
     {
         std::wstringstream ws;
-        ws << L"Status: Crypto++ Exception: " << e.what();
-        SetWindowText(hStatusLabel, ws.str().c_str());
+        ws << L"A cryptographic error occurred during signature verification:\n\n" << e.what();
+        ShowError(hWnd, ws.str());
     }
 }
 

@@ -1,0 +1,5 @@
+[RSA]
+KeySize=2048
+
+[DSA]
+KeySize=1024
