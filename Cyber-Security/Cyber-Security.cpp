@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <thread>
+#include <shellapi.h> // Required for ShellExecute
 
 // Crypto++ headers
 #include "rsa.h"
@@ -51,6 +52,7 @@ HWND hStatusLabel;
 HWND hInputFileText;
 HWND hOutputFileText;
 HWND hOperationComboBox;
+HWND hOpenFolderButton; // New button to open the output folder
 
 // --- Crypto++ Functions (Updated Declarations) ---
 void GenerateRSAKeys(HWND hWnd);
@@ -69,6 +71,8 @@ void SaveKey(const std::string& filename, const CryptoPP::DSA::PublicKey& key);
 void SaveKey(const std::string& filename, const CryptoPP::DSA::PrivateKey& key);
 void LoadKey(const std::string& filename, CryptoPP::DSA::PublicKey& key);
 void LoadKey(const std::string& filename, CryptoPP::DSA::PrivateKey& key);
+
+void UpdateUIForOperation(int selectedIndex, HWND hWnd); // Function to update UI
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -156,7 +160,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         // Create GUI elements
         hInputFileButton = CreateWindow(
-            L"BUTTON", L"Upload", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+            L"BUTTON", L"Select File", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
             10, 10, 100, 30, hWnd, (HMENU)1, hInst, NULL);
 
         hInputFileText = CreateWindow(
@@ -168,7 +172,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             10, 50, 100, 30, hWnd, (HMENU)3, hInst, NULL);
 
         hOutputFileButton = CreateWindow(
-            L"BUTTON", L"Download", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+            L"BUTTON", L"Select Destination", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
             10, 90, 100, 30, hWnd, (HMENU)4, hInst, NULL);
 
         hOutputFileText = CreateWindow(
@@ -189,6 +193,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             10, 160, 360, 20, // Position it below the status label
             hWnd, (HMENU)8, hInst, NULL);
 
+        hOpenFolderButton = CreateWindow(
+            L"BUTTON", L"Open Output Folder", WS_TABSTOP | WS_CHILD | BS_DEFPUSHBUTTON,
+            10, 190, 150, 30, hWnd, (HMENU)9, hInst, NULL);
+
+
         // Add items to the combo box
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"RSA Key Generation");
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"RSA Encryption");
@@ -196,13 +205,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"DSA Signature Generation");
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"DSA Signature Verification");
         SendMessage(hProgressBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
+
         // Set the default selection
         SendMessage(hOperationComboBox, CB_SETCURSEL, 0, 0);
+        UpdateUIForOperation(0, hWnd);
     }
     break;
     case WM_COMMAND:
     {
         int wmId = LOWORD(wParam);
+        if (HIWORD(wParam) == CBN_SELCHANGE) {
+            int selectedIndex = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
+            UpdateUIForOperation(selectedIndex, hWnd);
+        }
         // Parse the menu selections:
         switch (wmId)
         {
@@ -278,6 +293,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (GetSaveFileName(&ofn) == TRUE)
             {
                 SetWindowText(hOutputFileText, ofn.lpstrFile);
+            }
+        }
+        break;
+        case 9: // Open Folder Button
+        {
+            wchar_t outputFile[260];
+            GetWindowText(hOutputFileText, outputFile, 260);
+            if (wcslen(outputFile) > 0)
+            {
+                std::wstring path(outputFile);
+                size_t last_slash = path.find_last_of(L"\\/");
+                if (std::string::npos != last_slash)
+                {
+                    path = path.substr(0, last_slash);
+                }
+                ShellExecute(NULL, L"open", path.c_str(), NULL, NULL, SW_SHOWNORMAL);
+            }
+            else
+            {
+                // Fallback for encryption where the path is fixed
+                wchar_t currentDir[260];
+                GetCurrentDirectory(260, currentDir);
+                ShellExecute(NULL, L"open", currentDir, NULL, NULL, SW_SHOWNORMAL);
             }
         }
         break;
@@ -362,7 +400,7 @@ void GenerateRSAKeys(HWND hWnd) {
 
         SaveKey("rsa-private.key", privateKey);
         SaveKey("rsa-public.key", publicKey);
-
+        MessageBox(hWnd, L"RSA key pair generated successfully.", L"Success", MB_OK | MB_ICONINFORMATION);
         PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
     catch (const CryptoPP::Exception& e) {
@@ -400,9 +438,18 @@ void EncryptRSA(const wchar_t* inputFile, HWND hWnd) {
         );
         PostMessage(hWnd, PBM_SETPOS, 75, 0);
 
+        wchar_t encryptedFilePath[MAX_PATH];
+        GetCurrentDirectory(MAX_PATH, encryptedFilePath);
+        wcscat_s(encryptedFilePath, L"\\encrypted.dat");
+
+
         std::ofstream out("encrypted.dat", std::ios::binary);
         out.write(ciphertext.c_str(), ciphertext.length());
         out.close();
+
+        std::wstring message = L"Your file is encrypted. Path: " + std::wstring(encryptedFilePath);
+        MessageBox(hWnd, message.c_str(), L"Encryption Success", MB_OK | MB_ICONINFORMATION);
+        ShowWindow(hOpenFolderButton, SW_SHOW);
 
         PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
@@ -444,7 +491,7 @@ void DecryptRSA(const wchar_t* inputFile, HWND hWnd) {
         GetWindowText(hOutputFileText, outputFile, 260);
 
         if (wcslen(outputFile) == 0) {
-            ShowError(hWnd, L"Please select an output location using the 'Download' button before decrypting.");
+            ShowError(hWnd, L"Please select an output location using the 'Select Destination' button before decrypting.");
             return;
         }
 
@@ -452,6 +499,8 @@ void DecryptRSA(const wchar_t* inputFile, HWND hWnd) {
         out.write(plaintext.c_str(), plaintext.length());
         out.close();
 
+        MessageBox(hWnd, L"File decrypted successfully.", L"Decryption Success", MB_OK | MB_ICONINFORMATION);
+        ShowWindow(hOpenFolderButton, SW_SHOW);
         PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
     catch (const CryptoPP::Exception& e) {
@@ -498,7 +547,7 @@ void GenerateDSASignature(const wchar_t* inputFile, HWND hWnd)
         std::ofstream sigFile("signature.dat", std::ios::binary);
         sigFile.write(signature.c_str(), signature.size());
         sigFile.close();
-
+        MessageBox(hWnd, L"DSA signature generated successfully.", L"Success", MB_OK | MB_ICONINFORMATION);
         PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
     catch (const CryptoPP::Exception& e)
@@ -617,4 +666,45 @@ void LoadKey(const std::string& filename, CryptoPP::DSA::PrivateKey& key) {
     file.TransferTo(queue);
     queue.MessageEnd();
     key.Load(queue);
+}
+
+void UpdateUIForOperation(int selectedIndex, HWND hWnd)
+{
+    // Hide all optional controls by default
+    ShowWindow(hInputFileButton, SW_HIDE);
+    ShowWindow(hInputFileText, SW_HIDE);
+    ShowWindow(hOutputFileButton, SW_HIDE);
+    ShowWindow(hOutputFileText, SW_HIDE);
+    ShowWindow(hOpenFolderButton, SW_HIDE);
+
+    switch (selectedIndex)
+    {
+    case 0: // RSA Key Generation
+        ShowWindow(hInputFileButton, SW_SHOW);
+        ShowWindow(hInputFileText, SW_SHOW);
+        SetWindowText(hProcessButton, L"Generate Key");
+        break;
+    case 1: // RSA Encryption
+        ShowWindow(hInputFileButton, SW_SHOW);
+        ShowWindow(hInputFileText, SW_SHOW);
+        SetWindowText(hProcessButton, L"Encrypt");
+        break;
+    case 2: // RSA Decryption
+        ShowWindow(hInputFileButton, SW_SHOW);
+        ShowWindow(hInputFileText, SW_SHOW);
+        ShowWindow(hOutputFileButton, SW_SHOW);
+        ShowWindow(hOutputFileText, SW_SHOW);
+        SetWindowText(hProcessButton, L"Decrypt");
+        break;
+    case 3: // DSA Signature Generation
+        ShowWindow(hInputFileButton, SW_SHOW);
+        ShowWindow(hInputFileText, SW_SHOW);
+        SetWindowText(hProcessButton, L"Generate");
+        break;
+    case 4: // DSA Signature Verification
+        ShowWindow(hInputFileButton, SW_SHOW);
+        ShowWindow(hInputFileText, SW_SHOW);
+        SetWindowText(hProcessButton, L"Verify");
+        break;
+    }
 }
