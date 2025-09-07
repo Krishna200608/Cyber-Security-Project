@@ -4,9 +4,27 @@ A user-friendly Windows desktop application for performing essential cryptograph
 
 ---
 
-## Screenshot
+## Screenshots
 
-![Application Screenshot](./Images/App.png)
+1) **RSA Key Generation**  
+
+![Application Screenshot](./Images/key_gen.png)
+
+2) **RSA Encryption**  
+
+![Application Screenshot](./Images/rsa_en.png)
+
+3) **RSA Decryption**  
+
+![Application Screenshot](./Images/rsa_de.png)
+
+4) **DSA Signature Generation**  
+
+![Application Screenshot](./Images/dsa_sig_gen.png)
+
+5) **DSA Signature Verification**  
+
+![Application Screenshot](./Images/dsa_sig_verify.png)
 
 ---
 
