@@ -68,10 +68,10 @@ Cyber-Security-Project/
 This diagram shows the high-level components of the application and their relationships.
 
 ```mermaid
-componentDiagram
-    [UI (Win32 API)] --> [Crypto Logic] : Invokes Operations
-    [Crypto Logic] --> [Crypto++ Library] : Uses
-    [Crypto Logic] --> [File System] : Reads/Writes Files
+flowchart TD
+    UI[UI (Win32 API)] -->|Invokes Operations| CryptoLogic[Crypto Logic]
+    CryptoLogic -->|Uses| CryptoPP[Crypto++ Library]
+    CryptoLogic -->|Reads/Writes Files| FileSystem[File System]
 ```
 
 ---
@@ -112,6 +112,97 @@ graph TD
         F1 --> F2[2. Process];
         F2 --> F3{Result: Valid / Invalid};
     end
+```
+
+---
+
+## Sequence Diagrams
+
+### 🔑 RSA Key Pair Generation
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant CryptoLogic
+    participant CryptoPP
+
+    User ->> UI: Request RSA Key Generation
+    UI ->> CryptoLogic: Generate RSA Keys
+    CryptoLogic ->> CryptoPP: Call RSA KeyGen API
+    CryptoPP -->> CryptoLogic: Return Public/Private Keys
+    CryptoLogic -->> UI: Save Keys to Files
+    UI -->> User: Keys Generated Successfully
+```
+
+### 🔐 RSA Encryption
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant CryptoLogic
+    participant CryptoPP
+    participant FileSystem
+
+    User ->> UI: Select File for Encryption
+    UI ->> CryptoLogic: Encrypt File
+    CryptoLogic ->> FileSystem: Read Plaintext File
+    CryptoLogic ->> CryptoPP: Encrypt with Public Key
+    CryptoPP -->> CryptoLogic: Return Ciphertext
+    CryptoLogic ->> FileSystem: Write encrypted.dat
+    UI -->> User: Encryption Completed
+```
+
+### 🔓 RSA Decryption
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant CryptoLogic
+    participant CryptoPP
+    participant FileSystem
+
+    User ->> UI: Select encrypted.dat
+    UI ->> CryptoLogic: Decrypt File
+    CryptoLogic ->> FileSystem: Read encrypted.dat
+    CryptoLogic ->> CryptoPP: Decrypt with Private Key
+    CryptoPP -->> CryptoLogic: Return Plaintext
+    CryptoLogic ->> FileSystem: Save Decrypted File
+    UI -->> User: Decryption Completed
+```
+
+### 🖊️ DSA Signature Generation
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant CryptoLogic
+    participant CryptoPP
+    participant FileSystem
+
+    User ->> UI: Select File for Signature
+    UI ->> CryptoLogic: Generate Signature
+    CryptoLogic ->> FileSystem: Read File
+    CryptoLogic ->> CryptoPP: Generate Signature with DSA Keys
+    CryptoPP -->> CryptoLogic: Return Signature
+    CryptoLogic ->> FileSystem: Save signature.dat
+    UI -->> User: Signature Generated
+```
+
+### ✅ DSA Signature Verification
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant CryptoLogic
+    participant CryptoPP
+    participant FileSystem
+
+    User ->> UI: Select File + signature.dat
+    UI ->> CryptoLogic: Verify Signature
+    CryptoLogic ->> FileSystem: Read File & signature.dat
+    CryptoLogic ->> CryptoPP: Verify Signature with DSA Public Key
+    CryptoPP -->> CryptoLogic: Return Verification Result
+    UI -->> User: Valid / Invalid
 ```
 
 ---
