@@ -49,6 +49,34 @@ A user-friendly Windows desktop application for performing essential cryptograph
 
 ---
 
+```
+Cyber-Security-Project/
+|-- .gitattributes
+|-- .gitignore
+|-- Cyber-Security.sln
+|-- Cyber-Security/
+|   |-- Cyber-Security.cpp
+|   |-- Cyber-Security.h
+|   |-- Cyber-Security.ico
+|   |-- Cyber-Security.rc
+|   |-- Cyber-Security.vcxproj
+|   |-- framework.h
+|   |-- Resource.h
+|   `-- ... (other project files)
+|-- Images/
+|   |-- key_gen.png
+|   |-- rsa_en.png
+|   |-- rsa_de.png
+|   |-- dsa_sig_gen.png
+|   `-- dsa_sig_verify.png
+|-- README.md
+`-- test/
+    |-- Message.txt
+    `-- ... (test files)
+```
+
+---
+
 ## Application Workflow Canvas
 
 This diagram illustrates the primary workflows within the application.
