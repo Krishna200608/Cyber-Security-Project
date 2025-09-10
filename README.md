@@ -66,9 +66,10 @@ Cyber-Security-Project/
 
 ```mermaid
 flowchart TD
-    UI[UI (Win32 API)] -->|Invokes Operations| CryptoLogic[Crypto Logic]
-    CryptoLogic -->|Uses| CryptoPP[Crypto++ Library]
-    CryptoLogic -->|Reads/Writes Files| FileSystem[File System]
+    UI[UI (Win32 API)] -- "Invokes Operations" --> CryptoLogic[Crypto Logic]
+    CryptoLogic -- "Uses" --> CryptoPP[Crypto++ Library]
+    CryptoLogic -- "Reads/Writes Files" --> FileSystem[File System]
+
 ```
 
 ---
