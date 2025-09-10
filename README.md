@@ -4,27 +4,11 @@ A user-friendly Windows desktop application for performing essential cryptograph
 
 ---
 
-## Screenshots
+## Output
 
-1) **RSA Key Generation**  
+1) **Application UI**  
 
-![Application Screenshot](./Images/key_gen.png)
-
-2) **RSA Encryption**  
-
-![Application Screenshot](./Images/rsa_en.png)
-
-3) **RSA Decryption**  
-
-![Application Screenshot](./Images/rsa_de.png)
-
-4) **DSA Signature Generation**  
-
-![Application Screenshot](./Images/dsa_sig_gen.png)
-
-5) **DSA Signature Verification**  
-
-![Application Screenshot](./Images/dsa_sig_verify.png)
+![Application Screenshot](./Images/UI.png)
 
 ---
 
@@ -48,6 +32,8 @@ A user-friendly Windows desktop application for performing essential cryptograph
 * **Clear Error Handling:** Displays detailed error messages in pop-up dialogs.
 
 ---
+
+## 📂 File Structure
 
 ```
 Cyber-Security-Project/
@@ -76,6 +62,19 @@ Cyber-Security-Project/
 ```
 
 ---
+
+# Component Diagram
+
+This diagram shows the high-level components of the application and their relationships.
+
+```mermaid
+componentDiagram
+    [UI (Win32 API)] --> [Crypto Logic] : Invokes Operations
+    [Crypto Logic] --> [Crypto++ Library] : Uses
+    [Crypto Logic] --> [File System] : Reads/Writes Files
+```
+---
+
 
 ## Application Workflow Canvas
 

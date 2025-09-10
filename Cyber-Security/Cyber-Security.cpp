@@ -52,7 +52,8 @@ HWND hStatusLabel;
 HWND hInputFileText;
 HWND hOutputFileText;
 HWND hOperationComboBox;
-HWND hOpenFolderButton; // New button to open the output folder
+HWND hOpenFolderButton;
+HWND hOutputInfoBox; // New Edit control for output paths
 
 // --- Crypto++ Functions (Updated Declarations) ---
 void GenerateRSAKeys(HWND hWnd);
@@ -137,7 +138,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     hInst = hInstance; // Store instance handle in our global variable
 
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, 400, 300, nullptr, nullptr, hInstance, nullptr);
+        CW_USEDEFAULT, 0, 400, 450, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd)
     {
@@ -197,6 +198,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             L"BUTTON", L"Open Output Folder", WS_TABSTOP | WS_CHILD | BS_DEFPUSHBUTTON,
             10, 190, 150, 30, hWnd, (HMENU)9, hInst, NULL);
 
+        hOutputInfoBox = CreateWindow(
+            L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
+            10, 230, 360, 150, hWnd, (HMENU)10, hInst, NULL);
+
 
         // Add items to the combo box
         SendMessage(hOperationComboBox, CB_ADDSTRING, 0, (LPARAM)L"RSA Key Generation");
@@ -248,6 +253,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             int selectedIndex = SendMessage(hOperationComboBox, CB_GETCURSEL, 0, 0);
             static wchar_t inputFile[260]; // Make static so it persists for the thread
             GetWindowText(hInputFileText, inputFile, 260);
+            SetWindowText(hOutputInfoBox, L""); // Clear the output box
 
             // Basic input validation
             if (selectedIndex > 0 && wcslen(inputFile) == 0) {
@@ -400,6 +406,17 @@ void GenerateRSAKeys(HWND hWnd) {
 
         SaveKey("rsa-private.key", privateKey);
         SaveKey("rsa-public.key", publicKey);
+
+        wchar_t privateKeyPath[MAX_PATH];
+        GetFullPathName(L"rsa-private.key", MAX_PATH, privateKeyPath, NULL);
+
+        wchar_t publicKeyPath[MAX_PATH];
+        GetFullPathName(L"rsa-public.key", MAX_PATH, publicKeyPath, NULL);
+
+        std::wstring outputInfo = L"Private Key: " + std::wstring(privateKeyPath) + L"\r\n" + L"Public Key: " + std::wstring(publicKeyPath);
+        SetWindowText(hOutputInfoBox, outputInfo.c_str());
+
+
         MessageBox(hWnd, L"RSA key pair generated successfully.", L"Success", MB_OK | MB_ICONINFORMATION);
         PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
@@ -439,13 +456,15 @@ void EncryptRSA(const wchar_t* inputFile, HWND hWnd) {
         PostMessage(hWnd, PBM_SETPOS, 75, 0);
 
         wchar_t encryptedFilePath[MAX_PATH];
-        GetCurrentDirectory(MAX_PATH, encryptedFilePath);
-        wcscat_s(encryptedFilePath, L"\\encrypted.dat");
+        GetFullPathName(L"encrypted.dat", MAX_PATH, encryptedFilePath, NULL);
 
 
         std::ofstream out("encrypted.dat", std::ios::binary);
         out.write(ciphertext.c_str(), ciphertext.length());
         out.close();
+
+        std::wstring outputInfo = L"Encrypted File: " + std::wstring(encryptedFilePath);
+        SetWindowText(hOutputInfoBox, outputInfo.c_str());
 
         std::wstring message = L"Your file is encrypted. Path: " + std::wstring(encryptedFilePath);
         MessageBox(hWnd, message.c_str(), L"Encryption Success", MB_OK | MB_ICONINFORMATION);
@@ -499,6 +518,13 @@ void DecryptRSA(const wchar_t* inputFile, HWND hWnd) {
         out.write(plaintext.c_str(), plaintext.length());
         out.close();
 
+        wchar_t decryptedFilePath[MAX_PATH];
+        GetFullPathName(outputFile, MAX_PATH, decryptedFilePath, NULL);
+
+        std::wstring outputInfo = L"Decrypted File: " + std::wstring(decryptedFilePath);
+        SetWindowText(hOutputInfoBox, outputInfo.c_str());
+
+
         MessageBox(hWnd, L"File decrypted successfully.", L"Decryption Success", MB_OK | MB_ICONINFORMATION);
         ShowWindow(hOpenFolderButton, SW_SHOW);
         PostMessage(hWnd, PBM_SETPOS, 100, 0);
@@ -547,6 +573,22 @@ void GenerateDSASignature(const wchar_t* inputFile, HWND hWnd)
         std::ofstream sigFile("signature.dat", std::ios::binary);
         sigFile.write(signature.c_str(), signature.size());
         sigFile.close();
+
+        wchar_t privateKeyPath[MAX_PATH];
+        GetFullPathName(L"dsa-private.key", MAX_PATH, privateKeyPath, NULL);
+
+        wchar_t publicKeyPath[MAX_PATH];
+        GetFullPathName(L"dsa-public.key", MAX_PATH, publicKeyPath, NULL);
+
+        wchar_t signaturePath[MAX_PATH];
+        GetFullPathName(L"signature.dat", MAX_PATH, signaturePath, NULL);
+
+        std::wstring outputInfo = L"Private Key: " + std::wstring(privateKeyPath) + L"\r\n" +
+            L"Public Key: " + std::wstring(publicKeyPath) + L"\r\n" +
+            L"Signature: " + std::wstring(signaturePath);
+        SetWindowText(hOutputInfoBox, outputInfo.c_str());
+
+
         MessageBox(hWnd, L"DSA signature generated successfully.", L"Success", MB_OK | MB_ICONINFORMATION);
         PostMessage(hWnd, PBM_SETPOS, 100, 0);
     }
