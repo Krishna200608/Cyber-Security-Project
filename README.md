@@ -9,7 +9,6 @@ A user-friendly Windows desktop application for performing essential cryptograph
 1. **Application UI**
 
 ![Application Screenshot](./Images/UI.png)
-
 ---
 
 ## Features
@@ -65,8 +64,6 @@ Cyber-Security-Project/
 
 ## Component Diagram
 
-This diagram shows the high-level components of the application and their relationships.
-
 ```mermaid
 flowchart TD
     UI[UI (Win32 API)] -->|Invokes Operations| CryptoLogic[Crypto Logic]
@@ -77,8 +74,6 @@ flowchart TD
 ---
 
 ## Application Workflow Canvas
-
-This diagram illustrates the primary workflows within the application.
 
 ```mermaid
 graph TD
@@ -119,6 +114,7 @@ graph TD
 ## Sequence Diagrams
 
 ### 🔑 RSA Key Pair Generation
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -126,15 +122,16 @@ sequenceDiagram
     participant CryptoLogic
     participant CryptoPP
 
-    User ->> UI: Request RSA Key Generation
-    UI ->> CryptoLogic: Generate RSA Keys
-    CryptoLogic ->> CryptoPP: Call RSA KeyGen API
-    CryptoPP -->> CryptoLogic: Return Public/Private Keys
-    CryptoLogic -->> UI: Save Keys to Files
-    UI -->> User: Keys Generated Successfully
+    User->>UI: Request RSA Key Generation
+    UI->>CryptoLogic: Generate RSA Keys
+    CryptoLogic->>CryptoPP: Call RSA KeyGen API
+    CryptoPP-->>CryptoLogic: Return Public/Private Keys
+    CryptoLogic-->>UI: Save Keys to Files
+    UI-->>User: Keys Generated Successfully
 ```
 
 ### 🔐 RSA Encryption
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -143,16 +140,17 @@ sequenceDiagram
     participant CryptoPP
     participant FileSystem
 
-    User ->> UI: Select File for Encryption
-    UI ->> CryptoLogic: Encrypt File
-    CryptoLogic ->> FileSystem: Read Plaintext File
-    CryptoLogic ->> CryptoPP: Encrypt with Public Key
-    CryptoPP -->> CryptoLogic: Return Ciphertext
-    CryptoLogic ->> FileSystem: Write encrypted.dat
-    UI -->> User: Encryption Completed
+    User->>UI: Select File for Encryption
+    UI->>CryptoLogic: Encrypt File
+    CryptoLogic->>FileSystem: Read Plaintext File
+    CryptoLogic->>CryptoPP: Encrypt with Public Key
+    CryptoPP-->>CryptoLogic: Return Ciphertext
+    CryptoLogic->>FileSystem: Write encrypted.dat
+    UI-->>User: Encryption Completed
 ```
 
 ### 🔓 RSA Decryption
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -161,16 +159,17 @@ sequenceDiagram
     participant CryptoPP
     participant FileSystem
 
-    User ->> UI: Select encrypted.dat
-    UI ->> CryptoLogic: Decrypt File
-    CryptoLogic ->> FileSystem: Read encrypted.dat
-    CryptoLogic ->> CryptoPP: Decrypt with Private Key
-    CryptoPP -->> CryptoLogic: Return Plaintext
-    CryptoLogic ->> FileSystem: Save Decrypted File
-    UI -->> User: Decryption Completed
+    User->>UI: Select encrypted.dat
+    UI->>CryptoLogic: Decrypt File
+    CryptoLogic->>FileSystem: Read encrypted.dat
+    CryptoLogic->>CryptoPP: Decrypt with Private Key
+    CryptoPP-->>CryptoLogic: Return Plaintext
+    CryptoLogic->>FileSystem: Save Decrypted File
+    UI-->>User: Decryption Completed
 ```
 
 ### 🖊️ DSA Signature Generation
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -179,16 +178,17 @@ sequenceDiagram
     participant CryptoPP
     participant FileSystem
 
-    User ->> UI: Select File for Signature
-    UI ->> CryptoLogic: Generate Signature
-    CryptoLogic ->> FileSystem: Read File
-    CryptoLogic ->> CryptoPP: Generate Signature with DSA Keys
-    CryptoPP -->> CryptoLogic: Return Signature
-    CryptoLogic ->> FileSystem: Save signature.dat
-    UI -->> User: Signature Generated
+    User->>UI: Select File for Signature
+    UI->>CryptoLogic: Generate Signature
+    CryptoLogic->>FileSystem: Read File
+    CryptoLogic->>CryptoPP: Generate Signature with DSA Keys
+    CryptoPP-->>CryptoLogic: Return Signature
+    CryptoLogic->>FileSystem: Save signature.dat
+    UI-->>User: Signature Generated
 ```
 
 ### ✅ DSA Signature Verification
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -197,12 +197,12 @@ sequenceDiagram
     participant CryptoPP
     participant FileSystem
 
-    User ->> UI: Select File + signature.dat
-    UI ->> CryptoLogic: Verify Signature
-    CryptoLogic ->> FileSystem: Read File & signature.dat
-    CryptoLogic ->> CryptoPP: Verify Signature with DSA Public Key
-    CryptoPP -->> CryptoLogic: Return Verification Result
-    UI -->> User: Valid / Invalid
+    User->>UI: Select File + signature.dat
+    UI->>CryptoLogic: Verify Signature
+    CryptoLogic->>FileSystem: Read File & signature.dat
+    CryptoLogic->>CryptoPP: Verify Signature with DSA Public Key
+    CryptoPP-->>CryptoLogic: Return Verification Result
+    UI-->>User: Valid / Invalid
 ```
 
 ---
@@ -214,46 +214,39 @@ sequenceDiagram
 * **Visual Studio 2022:** Install with the *Desktop development with C++* workload.
 * **Crypto++ Library:** Required for cryptographic functions.
 
-  * **Download:** [Crypto++ Official Website](https://www.cryptopp.com/)
+  * **Download:** [Crypto++ Official Website](https://www.cryptopp.com)
   * **Integration:** Configure Visual Studio project to link against the Crypto++ library.
+  * Set *Include Directories* and *Library Directories* to point to your Crypto++ installation.
 
-    * Set *Include Directories* and *Library Directories* to point to your Crypto++ installation.
+### 🚀 How to Build and Run
 
----
-
-# 🚀 How to Build and Run
-
-## 1. Clone the Repository
+1. **Clone the Repository**
 
 ```bash
 git clone https://github.com/Krishna200608/Cyber-Security-Project.git
 ```
 
-## 2. Open in Visual Studio
+2. **Open in Visual Studio**
+   Open the `Cyber-Security.sln` solution file.
 
-* Open the **Cyber-Security.sln** solution file.
+3. **Configure Crypto++**
 
-## 3. Configure Crypto++
+   * Right-click on the **Cyber-Security** project → Properties.
+   * Set **Configuration**: `Debug`, **Platform**: `x64`.
+   * Go to *Configuration Properties → VC++ Directories*:
 
-1. Right-click on the **Cyber-Security** project in the Solution Explorer and select **Properties**.
-2. Set the **Configuration** to `Debug` and the **Platform** to `x64`.
-3. Go to **Configuration Properties → VC++ Directories**:
+     * **Include Directories:** `C:\Users\YourUser\Downloads\cryptopp890`
+     * **Library Directories:** `C:\Users\YourUser\Downloads\cryptopp890\x64\Output\Debug`
+   * Go to *Configuration Properties → Linker → Input*:
 
-   * **Include Directories**: Set to your Crypto++ installation folder (e.g., `C:\Users\YourUser\Downloads\cryptopp890`).
-   * **Library Directories**: Set to the x64 Debug library folder (e.g., `C:\Users\YourUser\Downloads\cryptopp890\x64\Output\Debug`).
-4. Go to **Configuration Properties → Linker → Input**:
+     * Add `cryptlib.lib` to **Additional Dependencies**.
+   * Click **Apply** → **OK**.
 
-   * In **Additional Dependencies**, add `cryptlib.lib`.
-5. Click **Apply**, then **OK**.
+4. **Set Build Configuration**
+   Choose **Debug** or **Release** for the `x64` platform.
 
-## 4. Set Build Configuration
+5. **Build the Solution**
+   From the top menu: `Build → Build Solution`.
 
-* Choose `Debug` or `Release` for the x64 platform.
-
-## 5. Build the Solution
-
-* From the top menu, select **Build → Build Solution**.
-
-## 6. Run the Application
-
-* Press **F5** or run the generated `.exe` from the build output folder (`x64/Debug` or `x64/Release`).
+6. **Run the Application**
+   Press `F5` or run the generated `.exe` from the build output folder (`x64/Debug` or `x64/Release`).
