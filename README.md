@@ -6,7 +6,7 @@ A user-friendly Windows desktop application for performing essential cryptograph
 
 ## Output
 
-1) **Application UI**  
+1. **Application UI**
 
 ![Application Screenshot](./Images/UI.png)
 
@@ -63,7 +63,7 @@ Cyber-Security-Project/
 
 ---
 
-# Component Diagram
+## Component Diagram
 
 This diagram shows the high-level components of the application and their relationships.
 
@@ -73,8 +73,8 @@ componentDiagram
     [Crypto Logic] --> [Crypto++ Library] : Uses
     [Crypto Logic] --> [File System] : Reads/Writes Files
 ```
----
 
+---
 
 ## Application Workflow Canvas
 
@@ -166,4 +166,3 @@ git clone https://github.com/Krishna200608/Cyber-Security-Project.git
 ## 6. Run the Application
 
 * Press **F5** or run the generated `.exe` from the build output folder (`x64/Debug` or `x64/Release`).
-
