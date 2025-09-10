@@ -4,12 +4,49 @@ A user-friendly Windows desktop application for performing essential cryptograph
 
 ---
 
+## 👥 Project Group & Team
+
+**Group: B6**
+**Teammates:**
+
+* Krishna Sikheriya (IIT2023139)
+* Ishan Chadha (IIT2023158)
+* Gaurav Jaiswal (IIT2023157)
+* Lokesh Bawariya (IIT2023138)
+* Sameer Prasad (IIT2023134)
+
+---
+
+## 📑 Table of Contents
+
+1. [Output](#output)
+2. [Features](#features)
+
+   * RSA Asymmetric Encryption
+   * DSA Digital Signatures
+   * User-Friendly Interface
+3. [File Structure](#-file-structure)
+4. [Component Diagram](#component-diagram)
+5. [Application Workflow Canvas](#application-workflow-canvas)
+6. [Sequence Diagrams](#sequence-diagrams)
+
+   * RSA Key Pair Generation
+   * RSA Encryption
+   * RSA Decryption
+   * DSA Signature Generation
+   * DSA Signature Verification
+7. [Getting Started](#getting-started)
+
+   * Prerequisites
+   * How to Build and Run
+
+---
+
 ## Output
 
 1. **Application UI**
 
-![Application Screenshot](./Images/UI.png)
----
+## ![Application Screenshot](./Images/UI.png)
 
 ## Features
 
@@ -69,7 +106,6 @@ flowchart TD
     UI["UI (Win32 API)"] -- "Invokes Operations" --> CryptoLogic[Crypto Logic]
     CryptoLogic -- "Uses" --> CryptoPP[Crypto++ Library]
     CryptoLogic -- "Reads/Writes Files" --> FileSystem[File System]
-
 ```
 
 ---
