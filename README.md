@@ -103,15 +103,40 @@ graph TD
 
 ---
 
-### 🚀 How to Build and Run
+# 🚀 How to Build and Run
 
-1. **Clone the Repository:**
+## 1. Clone the Repository
 
-   ```bash
-   git clone https://github.com/Krishna200608/Cyber-Security-Project.git
-   ```
-2. **Configure Crypto++:** Ensure Visual Studio can find your Crypto++ library files.
-3. **Open in Visual Studio:** Open the `Cyber-Security.sln` solution file.
-4. **Set Build Configuration:** Choose Debug or Release for the *x64* platform.
-5. **Build the Solution:** From the top menu, select `Build > Build Solution`.
-6. **Run the Application:** Press `F5` or run the generated `.exe` from the build output folder (`x64/Debug` or `x64/Release`).
+```bash
+git clone https://github.com/Krishna200608/Cyber-Security-Project.git
+```
+
+## 2. Open in Visual Studio
+
+* Open the **Cyber-Security.sln** solution file.
+
+## 3. Configure Crypto++
+
+1. Right-click on the **Cyber-Security** project in the Solution Explorer and select **Properties**.
+2. Set the **Configuration** to `Debug` and the **Platform** to `x64`.
+3. Go to **Configuration Properties → VC++ Directories**:
+
+   * **Include Directories**: Set to your Crypto++ installation folder (e.g., `C:\Users\YourUser\Downloads\cryptopp890`).
+   * **Library Directories**: Set to the x64 Debug library folder (e.g., `C:\Users\YourUser\Downloads\cryptopp890\x64\Output\Debug`).
+4. Go to **Configuration Properties → Linker → Input**:
+
+   * In **Additional Dependencies**, add `cryptlib.lib`.
+5. Click **Apply**, then **OK**.
+
+## 4. Set Build Configuration
+
+* Choose `Debug` or `Release` for the x64 platform.
+
+## 5. Build the Solution
+
+* From the top menu, select **Build → Build Solution**.
+
+## 6. Run the Application
+
+* Press **F5** or run the generated `.exe` from the build output folder (`x64/Debug` or `x64/Release`).
+
